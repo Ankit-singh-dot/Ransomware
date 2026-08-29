@@ -1,0 +1,59 @@
+FROM redis:7-alpine
+
+# Install filesystem monitoring tools and curl
+RUN apk add --no-cache inotify-tools bash coreutils findutils diffutils curl
+
+# Create sandbox structure
+RUN mkdir -p /sandbox/data /sandbox/snapshots
+
+# Create synthetic test files
+WORKDIR /sandbox/data
+
+# Generate synthetic documents (plain text with low entropy)
+RUN for i in $(seq 1 50); do \
+      echo "This is a synthetic document file number $i for AEGIS testing." > "document_$i.txt"; \
+      echo "It contains normal text content that a real document might have." >> "document_$i.txt"; \
+      echo "The quick brown fox jumps over the lazy dog." >> "document_$i.txt"; \
+      echo "Lorem ipsum dolor sit amet, consectetur adipiscing elit." >> "document_$i.txt"; \
+      echo "Created at: $(date)" >> "document_$i.txt"; \
+    done
+
+# Generate synthetic config files
+RUN for i in $(seq 1 20); do \
+      echo "# Configuration file $i" > "config_$i.conf"; \
+      echo "setting_a=value_$i" >> "config_$i.conf"; \
+      echo "setting_b=true" >> "config_$i.conf"; \
+      echo "log_level=info" >> "config_$i.conf"; \
+    done
+
+# Create CANARY HONEYPOT files
+RUN echo "This is a canary file. Do not modify." > "FINANCE_PASSWORDS.txt"
+RUN echo "tripwire_active=true" > "DO_NOT_DELETE.canary"
+
+# Generate synthetic data files
+RUN mkdir -p /sandbox/data/reports /sandbox/data/logs /sandbox/data/projects
+RUN for i in $(seq 1 30); do \
+      echo "Report $i - Quarterly Analysis" > "reports/report_$i.csv"; \
+      echo "date,metric,value" >> "reports/report_$i.csv"; \
+      echo "2024-01-01,revenue,$((RANDOM % 10000))" >> "reports/report_$i.csv"; \
+      echo "2024-01-02,users,$((RANDOM % 5000))" >> "reports/report_$i.csv"; \
+    done
+RUN for i in $(seq 1 20); do \
+      echo "[INFO] Application log entry $i" > "logs/app_$i.log"; \
+      echo "[INFO] Request processed successfully" >> "logs/app_$i.log"; \
+      echo "[DEBUG] Connection established" >> "logs/app_$i.log"; \
+    done
+RUN for i in $(seq 1 15); do \
+      echo "# Project $i" > "projects/project_$i.md"; \
+      echo "This is a project documentation file." >> "projects/project_$i.md"; \
+      echo "## Overview" >> "projects/project_$i.md"; \
+      echo "Project details and specifications." >> "projects/project_$i.md"; \
+    done
+
+WORKDIR /sandbox
+
+# Copy and run the in-guest agent
+COPY agent.sh /sandbox/agent.sh
+RUN chmod +x /sandbox/agent.sh
+
+CMD ["/sandbox/agent.sh"]
