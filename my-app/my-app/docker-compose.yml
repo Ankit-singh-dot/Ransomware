@@ -1,0 +1,34 @@
+services:
+  target:
+    build:
+      context: ./sandbox
+      dockerfile: Dockerfile.target
+    container_name: aegis-target
+    volumes:
+      - sandbox-data:/sandbox/data
+      - sandbox-snapshots:/sandbox/snapshots
+    networks:
+      - aegis-net
+    restart: unless-stopped
+
+
+  simulator:
+    build:
+      context: ./simulator
+      dockerfile: Dockerfile
+    container_name: aegis-simulator
+    volumes:
+      - sandbox-data:/sandbox/data
+    networks:
+      - aegis-net
+    depends_on:
+      - target
+    restart: unless-stopped
+
+volumes:
+  sandbox-data:
+  sandbox-snapshots:
+
+networks:
+  aegis-net:
+    driver: bridge
