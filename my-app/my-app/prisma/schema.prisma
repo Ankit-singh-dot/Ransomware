@@ -1,0 +1,284 @@
+// AEGIS Prisma Schema — Ransomware Detection & Prevention System
+// All entities map to the runtime security engine, not generic CRUD.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+model Workspace {
+  id          String     @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  workloads   Workload[]
+  incidents   Incident[]
+  policies    Policy[]
+  auditLogs   AuditLog[]
+}
+
+model Workload {
+  id            String   @id @default(cuid())
+  workspaceId   String
+  containerId   String   @unique
+  containerName String
+  imageName     String
+  status        String   @default("RUNNING") // RUNNING, PAUSED, STOPPED, ISOLATED, DESTROYED
+  sandboxPath   String   @default("/sandbox/data")
+  aegisEnabled  Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  workspace     Workspace @relation(fields: [workspaceId], references: [id])
+  processes     Process[]
+  events        Event[]
+  incidents     Incident[]
+  snapshots     Snapshot[]
+  networkConnections NetworkConnection[]
+
+  @@index([workspaceId])
+  @@index([containerId])
+}
+
+
+
+model Process {
+  id              String   @id @default(cuid())
+  workloadId      String
+  pid             Int
+  parentPid       Int
+  name            String
+  command         String?
+  status          String   @default("RUNNING") // RUNNING, EXITED, KILLED
+  suspicious      Boolean  @default(false)
+  startedAt       DateTime @default(now())
+  exitedAt        DateTime?
+
+  workload        Workload @relation(fields: [workloadId], references: [id])
+  events          Event[]
+
+  @@index([workloadId])
+  @@index([pid, workloadId])
+}
+
+
+
+model Event {
+  id                 String   @id @default(cuid())
+  workloadId         String
+  processId          String?
+  sequenceNumber     Int      @default(autoincrement())
+  eventType          String   // FILE_READ, FILE_WRITE, FILE_RENAME, FILE_DELETE, PROCESS_START, PROCESS_EXIT, NETWORK_CONNECT
+  timestamp          DateTime @default(now())
+
+
+  filePath           String?
+  oldFilePath        String?
+  fileSize           Int?
+  entropyBefore      Float?
+  entropyAfter       Float?
+
+
+  networkDestination String?
+  networkPort        Int?
+
+
+  pid                Int?
+  parentPid          Int?
+  processName        String?
+
+  metadata           Json?
+
+  workload           Workload @relation(fields: [workloadId], references: [id])
+  process            Process? @relation(fields: [processId], references: [id])
+  threatSignals      ThreatSignal[]
+
+  @@index([workloadId, timestamp])
+  @@index([eventType])
+  @@index([workloadId, eventType, timestamp])
+}
+
+// ─── Threat Detection ────────────────────────────────────────────
+
+model Incident {
+  id                   String   @id @default(cuid())
+  workspaceId          String
+  workloadId           String
+  state                String   @default("NORMAL") // NORMAL, OBSERVING, SUSPICIOUS, THREAT_DETECTED, CONTAINING, CONTAINED, RECOVERING, RECOVERED, RESOLVED
+  threatScore          Int      @default(0)
+  detectedAt           DateTime @default(now())
+  containedAt          DateTime?
+  recoveredAt          DateTime?
+  resolvedAt           DateTime?
+
+  // Metrics
+  filesAtRisk          Int      @default(0)
+  filesAffected        Int      @default(0)
+  filesRecovered       Int      @default(0)
+  detectionLatencyMs   Int      @default(0)
+  containmentLatencyMs Int?
+
+  // Summary
+  title                String?
+  description          String?
+
+  workspace            Workspace @relation(fields: [workspaceId], references: [id])
+  workload             Workload  @relation(fields: [workloadId], references: [id])
+  signals              ThreatSignal[]
+  actions              Action[]
+  recoveryOps          RecoveryOperation[]
+  timelineEntries      TimelineEntry[]
+
+  @@index([workspaceId])
+  @@index([workloadId])
+  @@index([state])
+}
+
+model ThreatSignal {
+  id          String   @id @default(cuid())
+  incidentId  String
+  eventId     String?
+  signalType  String   // FILE_MOD_RATE, MASS_RENAME, ENTROPY_SPIKE, PROCESS_ANOMALY, NETWORK_ANOMALY, PRIVILEGE_ANOMALY
+  score       Int      // contribution to threat score
+  maxScore    Int      // max possible contribution
+  description String
+  evidence    String   // human-readable evidence
+  timestamp   DateTime @default(now())
+
+  incident    Incident @relation(fields: [incidentId], references: [id])
+  event       Event?   @relation(fields: [eventId], references: [id])
+
+  @@index([incidentId])
+}
+
+model TimelineEntry {
+  id          String   @id @default(cuid())
+  incidentId  String
+  timestamp   DateTime @default(now())
+  type        String   // event, detection, state_change, action, recovery
+  title       String
+  description String
+  severity    String   @default("info") // info, warning, critical, success
+
+  incident    Incident @relation(fields: [incidentId], references: [id])
+
+  @@index([incidentId, timestamp])
+}
+
+// ─── Policy Engine ───────────────────────────────────────────────
+
+model Policy {
+  id             String   @id @default(cuid())
+  workspaceId    String
+  name           String
+  description    String?
+  enabled        Boolean  @default(true)
+  autonomyMode   String   @default("AUTO_CONTAIN") // OBSERVE, SUGGEST, APPROVAL, AUTO_CONTAIN
+  observeAt      Int      @default(30)
+  suspiciousAt   Int      @default(50)
+  threatAt       Int      @default(75)
+  containAt      Int      @default(90)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  workspace      Workspace @relation(fields: [workspaceId], references: [id])
+  actions        Action[]
+
+  @@index([workspaceId])
+}
+
+// ─── Containment & Recovery ──────────────────────────────────────
+
+model Action {
+  id           String    @id @default(cuid())
+  incidentId   String
+  policyId     String?
+  actionType   String    // STOP_PROCESS, ISOLATE_CONTAINER, BLOCK_NETWORK, FREEZE_WORKLOAD, SNAPSHOT, RECOVER
+  status       String    @default("REQUESTED") // REQUESTED, RUNNING, SUCCESS, FAILED, ROLLED_BACK
+  targetPid    Int?
+  containerId  String?
+  requestedAt  DateTime  @default(now())
+  completedAt  DateTime?
+  error        String?
+  metadata     Json?
+
+  incident     Incident  @relation(fields: [incidentId], references: [id])
+  policy       Policy?   @relation(fields: [policyId], references: [id])
+
+  @@index([incidentId])
+}
+
+model Snapshot {
+  id          String   @id @default(cuid())
+  workloadId  String
+  path        String
+  fileCount   Int
+  totalSize   BigInt
+  createdAt   DateTime @default(now())
+
+  workload    Workload @relation(fields: [workloadId], references: [id])
+  recoveryOps RecoveryOperation[]
+
+  @@index([workloadId])
+}
+
+model RecoveryOperation {
+  id             String    @id @default(cuid())
+  incidentId     String
+  snapshotId     String
+  status         String    @default("REQUESTED") // REQUESTED, RUNNING, SUCCESS, FAILED
+  filesTotal     Int       @default(0)
+  filesRecovered Int       @default(0)
+  filesFailed    Int       @default(0)
+  requestedAt    DateTime  @default(now())
+  completedAt    DateTime?
+  error          String?
+
+  incident       Incident  @relation(fields: [incidentId], references: [id])
+  snapshot       Snapshot  @relation(fields: [snapshotId], references: [id])
+
+  @@index([incidentId])
+}
+
+
+
+model NetworkConnection {
+  id              String   @id @default(cuid())
+  workloadId      String
+  pid             Int
+  processName     String
+  destination     String
+  port            Int
+  protocol        String   @default("TCP")
+  suspicious      Boolean  @default(false)
+  timestamp       DateTime @default(now())
+
+  workload        Workload @relation(fields: [workloadId], references: [id])
+
+  @@index([workloadId])
+}
+
+
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  workspaceId  String
+  action       String   // AGENT_STARTED, WORKLOAD_CREATED, THREAT_DETECTED, POLICY_EVALUATED, CONTAINMENT_STARTED, etc.
+  actor        String   @default("system") // system, user, policy-engine
+  resourceType String?  // workload, incident, policy, etc.
+  resourceId   String?
+  details      Json?
+  timestamp    DateTime @default(now())
+
+  workspace    Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@index([workspaceId, timestamp])
+  @@index([action])
+}
