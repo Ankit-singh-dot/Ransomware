@@ -1,5 +1,6 @@
 # AEGIS: Next-Generation Active Cyber Defense
 
+demo Link :-  https://youtu.be/KQ5bLMOQMSo
 Traditional antivirus software is fundamentally broken. It relies on signatures -- essentially wanted posters of known viruses. When ransomware modifies its code slightly, traditional security lets it walk right through the front door.
 
 AEGIS abandons signatures entirely. Instead, it relies on behavioral analysis, mathematical entropy, and absolute zero-trust containment to detect and neutralize zero-day ransomware attacks in milliseconds.
