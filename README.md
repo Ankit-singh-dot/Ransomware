@@ -1,6 +1,7 @@
-# AEGIS: Next-Generation Active Cyber Defense
+<img width="1440" height="900" alt="Screenshot 2026-08-31 at 8 44 17 PM" src="https://github.com/user-attachments/assets/3b663567-a7f0-4f44-890b-924f1b1a5644" /># AEGIS: Next-Generation Active Cyber Defense
 
 demo Link :-  https://youtu.be/KQ5bLMOQMSo
+proof of docker commands are given below aslo you can verify this 
 Traditional antivirus software is fundamentally broken. It relies on signatures -- essentially wanted posters of known viruses. When ransomware modifies its code slightly, traditional security lets it walk right through the front door.
 
 AEGIS abandons signatures entirely. Instead, it relies on behavioral analysis, mathematical entropy, and absolute zero-trust containment to detect and neutralize zero-day ransomware attacks in milliseconds.
@@ -16,6 +17,8 @@ We do not look for a virus by name; we look at the data itself. Normal files, li
 AEGIS continuously monitors file write operations at the system level. When a file's Shannon Entropy exceeds a critical threshold (typically 7.5+), the Threat Engine flags it as a cryptographic attack, regardless of what the malware is named.
 
 **Example:** If a thief breaks into a library and starts translating all the books into an unreadable alien language, we don't need to know the thief's name to know something is wrong. We just measure how unreadable the books are becoming.
+<img width="337" height="378" alt="Screenshot 2026-08-31 at 8 47 16 PM" src="https://github.com/user-attachments/assets/2d950a6f-0922-426e-815a-e951a8e519f1" />
+
 
 ### 2. The Faraday Cage (Containment)
 
@@ -24,6 +27,8 @@ Ransomware relies on external Command and Control (C2) servers to steal your dat
 AEGIS intercepts the malicious process tree and dynamically severs the network interface at the container level. The malware is instantly isolated from the internet, preventing any data exfiltration. Simultaneously, it extracts the attacker's IP address and broadcasts it to the Threat Intelligence dashboard.
 
 **Example:** Imagine a bank robber trying to call their getaway driver. AEGIS doesn't just lock the bank doors; it instantly turns the entire building into a dead zone where cell phones have zero signal.
+<img width="1440" height="900" alt="Screenshot 2026-08-31 at 8 44 17 PM" src="https://github.com/user-attachments/assets/f9b7c282-ab59-46ed-a5fc-aad7e7682caa" />
+
 
 ### 3. Zero-Trust Vaporization (Recovery)
 
@@ -32,6 +37,8 @@ Detection and containment are only half the battle. AEGIS features an autonomous
 When a threat is contained, AEGIS terminates the hostile processes, systematically deletes any malicious files introduced by the attacker, and instantly restores the encrypted files from the clean snapshot.
 
 **Example:** If someone throws paint on a famous painting, AEGIS doesn't try to wash the paint off. It vaporizes the vandal, deletes the ruined painting, and instantly pulls a perfect replica out of a hidden vault.
+<img width="1440" height="900" alt="Screenshot 2026-08-31 at 8 46 32 PM" src="https://github.com/user-attachments/assets/06afd25a-c04c-4147-bdd5-6085871146fd" />
+<img width="1439" height="899" alt="Screenshot 2026-08-31 at 8 46 25 PM" src="https://github.com/user-attachments/assets/ff525b2e-741a-4903-af8b-3ea5986c3c38" />
 
 ### 4. The Counter-Strike (Ransom Note Hijack)
 
@@ -40,6 +47,8 @@ Every ransomware variant drops a ransom note demanding cryptocurrency. Because A
 Instead of merely deleting the note, the Recovery Engine overrides the attacker's payload, replacing the hacker's ransom demand with an AEGIS-branded ASCII signature indicating the threat was neutralized.
 
 **Example:** The hacker tries to slide a ransom demand under your door. AEGIS intercepts the paper, erases the hacker's message, writes "NICE TRY - THREAT NEUTRALIZED" on it, and slides it back.
+<img width="846" height="346" alt="Screenshot 2026-08-31 at 8 46 42 PM" src="https://github.com/user-attachments/assets/e3a488d4-d6ef-4b55-a2f3-de1d57b402c4" />
+
 
 ---
 
